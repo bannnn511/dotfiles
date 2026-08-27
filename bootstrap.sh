@@ -3,6 +3,7 @@
 set -Eeuo pipefail
 
 DOTFILES_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+SYSTEM_FILES_DIR="$DOTFILES_DIR/etc"
 OS="$(uname -s)"
 
 # Every command used by config.fish is installed here. Go and Node are included
@@ -33,7 +34,14 @@ APT_PACKAGES=(
   neovim
   nodejs
   npm
+  openssh-server
+  snapd
+  xauth
   zoxide
+)
+
+SNAPS=(
+  "helix --classic"
 )
 
 NPM_GLOBAL_PACKAGES=(
@@ -88,6 +96,19 @@ for asset in json.load(sys.stdin)["assets"]:
   rm -f "$tmp"
 }
 
+install_snaps() {
+  ((${#SNAPS[@]})) || return 0
+  have snap || { echo "snapd is required for snap packages" >&2; return 1; }
+  local snap_spec name args
+  for snap_spec in "${SNAPS[@]}"; do
+    # shellcheck disable=SC2206
+    args=($snap_spec)
+    name="${args[0]}"
+    sudo snap list "$name" >/dev/null 2>&1 && continue
+    sudo snap install "${args[@]}"
+  done
+}
+
 install_linux_release_tools() {
   local deb_arch rust_arch asset tool version url tmp binary
   deb_arch="$(dpkg --print-architecture)"
@@ -140,6 +161,7 @@ install_linux() {
     return 1
   fi
   install_apt
+  install_snaps
   install_linux_release_tools
 }
 
@@ -147,6 +169,26 @@ install_npm_globals() {
   ((${#NPM_GLOBAL_PACKAGES[@]})) || return 0
   have npm || { echo "npm is required for global npm packages" >&2; return 1; }
   npm install --global "${NPM_GLOBAL_PACKAGES[@]}"
+}
+
+install_system_files() {
+  [[ -d "$SYSTEM_FILES_DIR" ]] || return 0
+  local file relative target
+  while IFS= read -r -d '' file; do
+    relative="${file#"$SYSTEM_FILES_DIR/"}"
+    target="/$relative"
+    sudo install -D -m 0644 "$file" "$target"
+  done < <(find "$SYSTEM_FILES_DIR" -type f -print0)
+
+  if have sshd; then
+    sudo mkdir -p /run/sshd
+    sudo sshd -t
+    if have systemctl && systemctl list-unit-files ssh.service >/dev/null 2>&1; then
+      sudo systemctl reload ssh.service 2>/dev/null || sudo systemctl restart ssh.service 2>/dev/null || true
+    elif have service; then
+      sudo service ssh reload 2>/dev/null || sudo service ssh restart 2>/dev/null || true
+    fi
+  fi
 }
 
 link_dotfiles() {
@@ -170,6 +212,7 @@ main() {
     *) echo "Unsupported operating system: $OS" >&2; exit 1 ;;
   esac
   install_npm_globals
+  install_system_files
   link_dotfiles
   echo "Environment setup complete on $OS."
 }

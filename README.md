@@ -20,6 +20,6 @@ Whenever software is installed, add it to the matching array in `bootstrap.sh`:
 - `SNAPS`: snap packages, optionally including `--classic`
 - `NPM_GLOBAL_PACKAGES`: globally installed npm packages
 
-Put managed configuration files in `home/`, retaining their normal names (for example, `home/.bashrc`). Running `bootstrap.sh` links them into `$HOME`.
+Put managed user configuration files in `home/`, retaining their normal names (for example, `home/.bashrc`). Running `bootstrap.sh` links them into `$HOME`.
 
 For tools with custom installers, add a small idempotent install function to `bootstrap.sh` and invoke it from `main`.
