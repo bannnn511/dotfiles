@@ -24,7 +24,7 @@
     navigate = true  # use n and N to move between diff sections
     dark = true      # or light = true, or omit for auto-detection
 [merge]
-    conflictstyle = zdiff3
+	conflictstyle = zdiff3
 [rerere]
 	enabled = true
 [interactive]
