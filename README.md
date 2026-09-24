@@ -1,25 +1,43 @@
-# VM dotfiles
+# Dotfiles
 
-This repository is the reproducible record of tools and configuration installed on this VM.
+This repository is the reproducible record of tools and configuration installed on macOS or an Ubuntu/Debian VM. [mise](https://mise.jdx.dev/) manages system packages, development tools, and dotfile links.
 
-## Restore on a new Ubuntu VM
+## Restore a cloned checkout
 
 ```bash
 git clone <repository-url> ~/dotfiles
 cd ~/dotfiles
+./bootstrap.sh --dry-run
 ./bootstrap.sh
 ```
 
-The installer is intended to be safe to run repeatedly. Existing dotfiles are backed up with a `pre-dotfiles.<timestamp>` suffix before links are created.
+`bootstrap.sh` installs mise when necessary and then runs `mise bootstrap`. The setup is idempotent. mise refuses to replace conflicting dotfiles; inspect or move those files before applying, rather than forcing replacement without review.
+
+If mise is already installed, run it directly:
+
+```bash
+mise trust
+mise bootstrap --dry-run
+mise bootstrap
+mise bootstrap status
+```
+
+To bootstrap without cloning the repository yourself:
+
+```bash
+curl -fsSL https://mise.run | sh
+~/.local/bin/mise bootstrap --from https://github.com/bannnn511/dotfiles.git
+```
 
 ## Recording future changes
 
-Whenever software is installed, add it to the matching array in `bootstrap.sh`:
+Edit `mise.toml` when adding software:
 
-- `APT_PACKAGES`: packages installed with apt
-- `SNAPS`: snap packages, optionally including `--classic`
-- `NPM_GLOBAL_PACKAGES`: globally installed npm packages
+- Add versioned development tools to `[tools]`.
+- Add host packages to `[bootstrap.packages]` with their manager prefix, such as `apt:` or `brew:`.
 
-Put managed user configuration files in `home/`, retaining their normal names (for example, `home/.bashrc`). Running `bootstrap.sh` links them into `$HOME`.
+Put managed user configuration files in `home/`, retaining their normal paths. `mise bootstrap` links Git-tracked files from that directory into `$HOME` while leaving other files alone.
 
-For tools with custom installers, add a small idempotent install function to `bootstrap.sh` and invoke it from `main`.
+The bootstrap also links `mise.toml` to `~/.config/mise/config.toml`, making the declared tools available outside this repository.
+
+Preview changes with `mise bootstrap --dry-run` before applying them.

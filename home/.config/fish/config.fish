@@ -1,6 +1,15 @@
+fish_add_path "$HOME/.local/bin"
+if command -q mise
+    mise activate fish | source
+end
+
+# Compatibility fallback for SSH hosts without Ghostty's terminfo entry.
+set -x TERM xterm-256color
+
 if status is-interactive
     # Commands to run in interactive sessions can go here
     atuin init fish | source
+    fzf --fish | source
 end
 
 # setup go path
