@@ -9,7 +9,10 @@ set -x TERM xterm-256color
 if status is-interactive
     # Commands to run in interactive sessions can go here
     atuin init fish | source
-    fzf --fish | source
+    # fzf's fish integration requires Fish 3.4+ (Ubuntu 22.04 ships 3.3).
+    if test (string split . $version)[1] -gt 3; or test (string split . $version)[1] -eq 3 -a (string split . $version)[2] -ge 4
+        fzf --fish | source
+    end
 end
 
 # setup go path
